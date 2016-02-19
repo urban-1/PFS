@@ -54,6 +54,10 @@ PREFIX="$ROOT/local"
 DN=/dev/null
 
 if [ $clean -eq 1 ]; then
+    if [ "`readlink -f $ROOT`" == "/usr/local" ]; then
+        echo "Get serious.."
+        exit 1
+    fi
     echo "  - Removing Virtual environment basics"
     rm -rf "$ROOT/lib" 2> $DN
     rm -rf "$ROOT/bin" 2> $DN
@@ -338,12 +342,13 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     fi|" "$ROOT/bin/activate"
 
 
-    echo "* Changing to new environment ($BINDIR/activate) and getting pip"
+    echo "* Changing to new environment ($BINDIR/activate)"
+    source "$BINDIR/activate"
+    
+    echo "* Getting pip"
     
     # Use source python...
-    (source "$BINDIR/activate" && cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py)
-
-
+    cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py
     if [ $? -ne 0 ]; then
         echo "Failed to install pip"
         exit 4
