@@ -4,6 +4,7 @@ venv=""
 freeze=""
 clean=0
 all=0
+
 while getopts "hr:v:p:ca" opt; do
   case $opt in
     h)
@@ -58,10 +59,10 @@ if [ $clean -eq 1 ]; then
     if [ $all -eq 1 ]; then
         echo "  - Removing all sources"
         rm -rf "$ROOT/src" 2> $DN
-        rm -rf "$ROOT/local" 2> $DN
     fi
     exit 0
 fi
+
         
 echo "* Setting Up..."
 
@@ -118,7 +119,7 @@ function freezeInstall() {
         return
     fi
     
-    pip install -r $freeze
+    export C_INCLUDE_PATH; export PATH export; install -r $freeze --global-option=build_ext  --global-option=-L$PREFIX/lib64 --global-option=-L$PREFIX/lib
 }
 
 function downloadSrc {
@@ -363,19 +364,24 @@ else
     echo "Skipping Virtual environment cause it is there. If you want to clean it run:"
     echo "  $0 -c -p $ROOT"
 fi
+
 echo "All done, run the follwoing to activeate:"
-echo "  source $PREFIX/bin/activate  "
-echo -e "\n\n\n... DO NOT FORGET:\n"
-
-echo -e "pip install snimpy --global-option=build_ext --global-option=-I$PREFIX/lib/libffi-3.2.1/include --global-option=-I$PREFIX/include  --global-option=build_ext  --global-option=-L$PREFIX/lib64\n"
-
-echo -e "export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$PREFIX/lib64\n"
-
-echo -e "OR lxml: export C_INCLUDE_PATH=$PREFIX/include/libxml2:$PREFIX/include && pip install lxml"
-echo -e "OR lxml: export C_INCLUDE_PATH && pip install lxml"
-
-echo -e "pycrypto: export TMPDIR=~/tmp ; export C_INCLUDE_PATH && pip install pycrypto --global-option=build_ext  --global-option=-L$PREFIX/local/lib64 --global-option=-L$PREFIX/local/lib"
-
 echo "source $BINDIR/activate  "
+
+# --global-options:
+# pip install snimpy --global-option=build_ext --global-option=-I$PREFIX/lib/libffi-3.2.1/include --global-option=-I$PREFIX/include  --global-option=build_ext  --global-option=-L$PREFIX/lib64
+# 
+# Using the env C_INCLUDE_PATH which should have all correct paths:
+# export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
+# export C_INCLUDE_PATH && pip install lxml
+# export C_INCLUDE_PATH && pip install lxml
+# 
+# Exporting extra variables
+#  - TMPDIR: if /tmp mode is -x... (pycrypto needs it)
+#  - PATH: Override system scripts (I needed it for autotools - wrong SheBang)
+#  
+# export PATH; export TMPDIR=~/tmp ; export C_INCLUDE_PATH && pip install pycrypto
+# export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L/data/env/devel3.4.3/local/lib64
+
 
 exit 0
