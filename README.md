@@ -30,16 +30,16 @@ they are not available on the host, as long as they are in the `$PATH`.
 
     /path/to/pyenv.sh -p </path/to/new/env> -v <X.Y.Z> [-r <pip-requirements-file>]
     
-If a requirements file is given, after the environment is created it runs:
+If a requirements file is given, after the environment is created
+(and sourced) it runs:
 
-    pip install -r <pip-requirements-file>
+    export C_INCLUDE_PATH; export PATH export; \
+    pip install -r  <pip-requirements-file> --global-option=build_ext \
+                --global-option=-L$PREFIX/lib64 --global-option=-L$PREFIX/lib
     
 Use this environment as any python venv:
 
     source /path/to/new/env/bin/activate
-    
-NOTE: In some cases a second run is required to finalize the venv... working on
-it...
     
 ### Remove an environment ###
 
