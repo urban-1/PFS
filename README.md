@@ -107,7 +107,6 @@ The high level process is:
     ```
     sed -i "s|/usr/local/lib|$PREFIX/lib|" ./setup.py
     sed -i "s|/usr/local/include|$PREFIX/include|" ./setup.py
-    
     ```
     
 3.  Install few extra libs installed on top. The are mainly for SNMP and xml
