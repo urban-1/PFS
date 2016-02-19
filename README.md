@@ -38,9 +38,6 @@ Use this environment as any python venv:
 
     source /path/to/new/env/bin/activate
     
-NOTE: In some cases a second run is required to finalize the venv... working on
-it...
-    
 ### Remove an environment ###
 
 Well, the obvious:
