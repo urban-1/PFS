@@ -123,7 +123,7 @@ the following way:
                "ncurses-6.0" \                    # <-- Folder name after extraction (tar.gz and zip supported)
                "ncurses/curses.h" \               # <-- A single `include` file that is use to check if already installed
                "confmake" \                       # <-- Build type (confmake, autogen - see source)
-               "--with-shared --without-normal"   # <-- Additional args to `./configure` (--prefix and --enable--shared are added)
+               "--with-shared --without-normal"   # <-- Additional args to `./configure` (--prefix and --enable-shared are added)
                
 Have fun!
 
@@ -139,7 +139,3 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 OF SUCH DAMAGE.
-    
-
-    
-    
