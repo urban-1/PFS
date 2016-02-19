@@ -87,13 +87,13 @@ PYVER="$PYVER.`echo "$version" | cut -d'.' -f2`"
 # We use it a lot
 PREOPT="--prefix=$PREFIX"
 
-
 PYTHON=`which python`
+
 echo "* Checking $PREFIX/bin/python$PYVER"
 if [ -f "$PREFIX/bin/python$PYVER" ]; then
     PYTHON="$PREFIX/bin/python$PYVER"
 fi
-
+    
 # Allow user to provide tools like autoconf...
 export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
@@ -172,9 +172,9 @@ function installPython {
     
     make && make install
     # if successfull set the new python
-    if [ -e "$PREFIX/bin/python" ]; then
-        echo "  - Setting new python to \"$PREFIX/bin/python\""
-        PYTHON=$PREFIX/bin/python
+    if [ -e "$PREFIX/bin/python$PYVER" ]; then
+        echo "  - Setting new python to \"$PREFIX/bin/python$PYVER\""
+        PYTHON="$PREFIX/bin/python$PYVER"
     fi
     
     cd $p
@@ -308,16 +308,13 @@ if [ ! -e "$ROOT/bin/python" ]; then
 
     echo "* Creating base structure"
     echo "  - Using $PYTHON"
-    $PYTHON -m ensurepip
     $PYTHON ./virtualenv.py -p "$PYTHON" --no-setuptools "$ROOT"
     mv ./virtualenv.py "$ROOT/bin/"
     rm ./virtualenv.pyc 2> $DN
-    rm .__python__ 2> $DN
+    rm -r ./__pycache__ 2> $DN
 
-    # Add dynamic lib support: WARNING: NOT TESTED
-    # :\$VIRTUAL_ENV/local/lib64 breaks OpenSSL with local cffi?!
     # 
-    # Assuming ORACLE_HOME withing VENV
+    # Handle export variables in `activate`
     # 
     echo -e "\n\n# Urban was here
     
@@ -330,6 +327,9 @@ LD_LIBRARY_PATH=\"\$VIRTUAL_ENV/local/lib:\$VIRTUAL_ENV/local/lib64:\$ORACLE_HOM
 export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/libxml2:\$VIRTUAL_ENV/local/lib/libffi-3.2.1/include:\$C_INCLUDE_PATH\"
 export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     
+    #
+    # Clean up in deactivate...
+    #
     sed -i "s|deactivate () {|deactivate () {\n\
     if [ ! \"\${1-}\" = \"nondestructive\" ] ; then\n\
         export ORACLE_HOME=\"\$OLD_ORACLE_HOME\"\n\
@@ -338,15 +338,10 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     fi|" "$ROOT/bin/activate"
 
 
-    echo "* Changing to new environment ($BINDIR/activate)"
-    source "$BINDIR/activate"
-    if [ $? -ne 0 ]; then
-        echo "Failed to source new environment!!!!"
-        exit 4
-    fi
-
-    echo "* Getting pip!"
-    (cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py)
+    echo "* Changing to new environment ($BINDIR/activate) and getting pip"
+    
+    # Use source python...
+    (source "$BINDIR/activate" && cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py)
 
 
     if [ $? -ne 0 ]; then
