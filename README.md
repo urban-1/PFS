@@ -69,7 +69,7 @@ has been modified to do this, so all we need is:
     
 Installing pure python modules should not be a problem.
 
-## Trouble-shouting ##
+## Troubleshooting ##
 
 Few issues I had:
 
