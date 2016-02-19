@@ -1,23 +1,28 @@
  
 # PFS: Python From Scratch #
 
-Compile python from scratch, install in a local folder and create a python virtual
-environment on top that has no system dependencies.
+Compile python from scratch, install in a local development environment and 
+create a python virtual environment on top, that has no system dependencies.
 
-_Why?:_ Because I couldn't find a complete tutorial or something similar and I 
+_Why?:_ Because I couldn't find a complete tutorial or anything similar and I 
 do need a way to easily build the same environment on multiple hosts (different 
 distros).
 
-**DO NEVER RUN THIS AS ROOT** (see disclaimer - except if you know what you are doing... ie. install at `/usr/local` and remove sources...)
+**DO NEVER RUN THIS AS ROOT** (see disclaimer - except if you know what you 
+are doing... ie. install at `/usr/local` and remove sources...)
 
-_NOTE: Tested on CentOS 6.6 and Debian 7.1_. Leave a message if you successfully
-run this on different distros/platforms.
+_NOTE_: Tested on:
+- CentOS 6.6
+- Debian 7.1
+- Ubuntu 14.04.3
+
+Drop me a message if you have successfully run this on different distros/platforms.
 
 
 ## Requirements ##
 
-Build tools: g++, make, libtool, etc. These can be installed in any location if
-not available on the system as long as they are in the `$PATH`.
+Build tools: g++, make, libtool, etc. These can be installed in any location, if
+they are not available on the host, as long as they are in the `$PATH`.
 
 ## Usage ##
 
@@ -42,14 +47,15 @@ Well, the obvious:
 
     rm -rf /path/to/env
     
-However, the following will remove the  python virtual environment keeping the
-sources and local installation intact:
+However, the following will remove the python virtual environment keeping the
+sources and local build environment intact:
 
     /path/to/pyenv.sh -p </path/to/new/env> -c
     
 Appending `-a` will remove `lib`, `bin` and `src` folders and thus the python
-virtual environment and sources are gone. The venv can be rebuild at any time 
-since the `local` folder (development/build environment) is kept.
+virtual environment and sources are gone. The venv can be rebuild at any time
+using the "create" command. Libraries are not going to be re-build since the
+`local` folder (development/build environment) has been preserved.
 
 #### Cleaning-up ####
 
@@ -59,27 +65,30 @@ space (from ~650M to ~250M):
     rm -rf /path/to/new/env/src
 
 
-## Installing modules that require libs ##
+## Installing modules that require C/C++ libs ##
 
-Since we are using custom build libraries, when installing python modules that 
-require these libraries we have to export paths. The `virtualenv.py` `activate`
-has been modified to do this, so all we need is:
+We have a custom development/build environment and therefore, in order to 
+build new libraries, we need to export the correct include and lib paths. 
+The `virtualenv.py` `activate` scripts has been modified to do this, so 
+all we need to do is:
 
     export C_INCLUDE_PATH && pip install <module>
     
-Installing pure python modules should not be a problem.
+Installing pure python modules should not be a problem. Depending on how 
+the build environment was created, we might have to export more variables
+(see later: `TMPDIR`, `LD_LIBRARY_PATH`, etc)
 
 ## Troubleshooting ##
 
 Few issues I had:
 
-1.  `libtool` not installed or corrupted, solution: Installed in home directory 
-     and added to the `$PATH`
+1.  `libtool` not installed or corrupted, solution: Install in home directory 
+    and add to the `$PATH`
 2.  Python linking against system's `libpython.X.X.so`, solution: As suggested 
-    on `stackoverflow`, modify the setup.py (see `sed -i` in the script).
+    on `stackoverflow`[todo], modify the setup.py (see `sed -i` in the script).
 3.  `pip --global-option` being ignored or includes not found, solution: Setup 
-     your `LD_LIBRARY_PATH` and `C_INCLUDE_PATH` and export them. If the venv is
-     active you can also use `$VIRTUAL_ENV`, example:
+    your `LD_LIBRARY_PATH` and `C_INCLUDE_PATH` and export them. If the venv is
+    active you can also use `$VIRTUAL_ENV`, example:
      
      ```
      export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
