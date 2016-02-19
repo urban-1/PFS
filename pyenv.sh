@@ -21,7 +21,7 @@ while getopts "hr:v:p:ca" opt; do
         version=$OPTARG
       ;;
     p)
-        venv=$OPTARG
+        venv="$OPTARG"
       ;;
     c)
         clean=1
@@ -47,7 +47,9 @@ if [ "$venv" == "" ]; then
 fi
 
 # SETUP 
+mkdir -p $venv 2> $DN
 ROOT="`readlink -f "$venv"`"
+echo "BUILDING IN $ROOT"
 PREFIX="$ROOT/local"
 DN=/dev/null
 
@@ -96,18 +98,6 @@ fi
 export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
 export C_INCLUDE_PATH="$INCDIR/ncurses:$INCDIR/readline:$INCDIR/libxslt/:$INCDIR/libxml2:$PREFIX/lib/libffi-3.2.1/include:$C_INCLUDE_PATH"
-
-#
-# Activate the environment
-#
-function activate() {
-    echo "* Changing to new environment ($BINDIR/activate)"
-    source $BINDIR/activate
-    if [ $? -ne 0 ]; then
-        echo "Failed to source new environment!!!!"
-        exit 4
-    fi
-}
 
 function freezeInstall() {
     if [ "$freeze" == "" ]; then
@@ -295,15 +285,15 @@ if [ "$version" != "" ]; then
                "../lib/libffi-3.2.1/include/ffi.h" \
                "confmake"
     #  - LXML
-    installLib "https://codeload.github.com/GNOME/libxml2/zip/master" \
-               "libxml2.zip" \
+    installLib "https://github.com/GNOME/libxml2/archive/master.tar.gz" \
+               "libxml2.tar.gz" \
                "libxml2-master" \
                "libxml2/libxml/xmlversion.h" \
                "autogen" \
                "--with-python=$PREFIX/bin/python$PYVER"
     
-    installLib "https://codeload.github.com/GNOME/libxslt/zip/master" \
-               "libxslt.zip" \
+    installLib "https://github.com/GNOME/libxslt/archive/master.tar.gz" \
+               "libxslt.tar.gz" \
                "libxslt-master" \
                "libxslt/xslt.h" \
                "autogen" \
@@ -348,10 +338,15 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     fi|" "$ROOT/bin/activate"
 
 
-    activate
+    echo "* Changing to new environment ($BINDIR/activate)"
+    source "$BINDIR/activate"
+    if [ $? -ne 0 ]; then
+        echo "Failed to source new environment!!!!"
+        exit 4
+    fi
 
     echo "* Getting pip!"
-    (cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && $PYTHON ./get-pip.py)
+    (cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py)
 
 
     if [ $? -ne 0 ]; then
@@ -374,14 +369,13 @@ echo "source $BINDIR/activate  "
 # Using the env C_INCLUDE_PATH which should have all correct paths:
 # export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
 # export C_INCLUDE_PATH && pip install lxml
-# export C_INCLUDE_PATH && pip install lxml
 # 
 # Exporting extra variables
 #  - TMPDIR: if /tmp mode is -x... (pycrypto needs it)
 #  - PATH: Override system scripts (I needed it for autotools - wrong SheBang)
 #  
 # export PATH; export TMPDIR=~/tmp ; export C_INCLUDE_PATH && pip install pycrypto
-# export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L/data/env/devel3.4.3/local/lib64
+# export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
 
 
 exit 0
