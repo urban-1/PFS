@@ -8,7 +8,7 @@ _Why?:_ Because I couldn't find a complete tutorial or something similar and I
 do need a way to easily build the same environment on multiple hosts (different 
 distros).
 
-**DO NEVER RUN THIS AS ROOT** (see disclaimer)
+**DO NEVER RUN THIS AS ROOT** (see disclaimer - except if you know what you are doing... ie. install at `/usr/local` and remove sources...)
 
 _NOTE: Tested on CentOS 6.6 and Debian 7.1_. Leave a message if you successfully
 run this on different distros/platforms.
