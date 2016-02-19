@@ -78,7 +78,7 @@ Few issues I had:
 2.  Python linking against system's `libpython.X.X.so`, solution: As suggested 
     on `stackoverflow`, modify the setup.py (see `sed -i` in the script).
 3.  `pip --global-option` being ignored or includes not found, solution: Setup 
-     our `LD_LIBRARY_PATH` and `C_INCLUDE_PATH` and export them. If the venv is
+     your `LD_LIBRARY_PATH` and `C_INCLUDE_PATH` and export them. If the venv is
      active you can also use `$VIRTUAL_ENV`, example:
      
      ```
