@@ -330,9 +330,9 @@ if [ ! -e "$ROOT/bin/python" ]; then
     # 
     echo -e "\n\n# Urban was here
     
-export OLD_ORACLE_HOME=\"\$ORACLE_HOME\"
-export OLD_LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH\"
-export OLD_C_INCLUDE_PATH=\"\$C_INCLUDE_PATH\"
+OLD_ORACLE_HOME=\"\$ORACLE_HOME\"
+OLD_LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH\"
+OLD_C_INCLUDE_PATH=\"\$C_INCLUDE_PATH\"
 
 export ORACLE_HOME=\"\$VIRTUAL_ENV/addons/instantclient_12_1\"
 LD_LIBRARY_PATH=\"\$VIRTUAL_ENV/local/lib:\$VIRTUAL_ENV/local/lib64:\$ORACLE_HOME:\$LD_LIBRARY_PATH\"
@@ -343,7 +343,7 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     if [ ! \"\${1-}\" = \"nondestructive\" ] ; then\n\
         export ORACLE_HOME=\"\$OLD_ORACLE_HOME\"\n\
         export LD_LIBRARY_PATH=\"\$OLD_LD_LIBRARY_PATH\"\n\
-        export C_INCLUDE_PATH=\"\$OLD_C_INCLUDE_PATH\"
+        export C_INCLUDE_PATH=\"\$OLD_C_INCLUDE_PATH\"\n\
     fi|" "$ROOT/bin/activate"
 
 
@@ -367,14 +367,14 @@ echo "All done, run the follwoing to activeate:"
 echo "  source $PREFIX/bin/activate  "
 echo -e "\n\n\n... DO NOT FORGET:\n"
 
-echo -e "pip install cffi --global-option=build_ext --global-option=-I/data/env/devel2.7.10/local/lib/libffi-3.2.1/include --global-option=build_ext  --global-option=-L/data/env/devel2.7.10/lib64\n"
-
 echo -e "pip install snimpy --global-option=build_ext --global-option=-I$PREFIX/lib/libffi-3.2.1/include --global-option=-I$PREFIX/include  --global-option=build_ext  --global-option=-L$PREFIX/lib64\n"
+
+echo -e "export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$PREFIX/lib64\n"
 
 echo -e "OR lxml: export C_INCLUDE_PATH=$PREFIX/include/libxml2:$PREFIX/include && pip install lxml"
 echo -e "OR lxml: export C_INCLUDE_PATH && pip install lxml"
 
-echo -e "USE EXPORT C_INCLUDE_PATH and LD_LIBRARY_PATH before pip install"
+echo -e "pycrypto: export TMPDIR=~/tmp ; export C_INCLUDE_PATH && pip install pycrypto --global-option=build_ext  --global-option=-L$PREFIX/local/lib64 --global-option=-L$PREFIX/local/lib"
 
 echo "source $BINDIR/activate  "
 
