@@ -12,7 +12,7 @@ This is different from [pyevn](https://github.com/yyuu/pyenv/) in the following
 ways:
 
 -   Installs locally all required libraries, including build tools when these are
-    missing (if pyenv was doing that, this script wouldn't be needed)
+    missing (if `pyenv` was doing that, this script wouldn't be needed)
 -   Not intended to be a python environment manager, instead is only the builder
     while `virtualenv` is used to change between environments
 -   It can build a package using `checkinstall`
@@ -26,10 +26,9 @@ _NOTE_: Tested on:
 
 Drop me a message if you have successfully run this on different distros/platforms.
 
-
 ## Requirements ##
 
-Build tools: g++, make. All other tools will be installed is missing
+Build tools: g++, make. All other tools will be installed if missing
 
 ## Usage ##
 
@@ -39,8 +38,8 @@ Build tools: g++, make. All other tools will be installed is missing
 
     /path/to/pfs.sh -p </path/to/new/env> -v <X.Y.Z> [-r <pip-requirements-file>]
     
-If a requirements file is given, after the environment is created
-(and sourced) it runs:
+If a requirements file is given, after the environment is created (and sourced) 
+it runs:
 
     export C_INCLUDE_PATH; export PATH export; \
     pip install -r  <pip-requirements-file> --global-option=build_ext \
@@ -91,18 +90,16 @@ the build environment was created, we might have to export more variables
 
 Few issues I had:
 
-1.  `libtool` not installed or corrupted, solution: Install in home directory 
-    and add to the `$PATH`
-2.  Python linking against system's `libpython.X.X.so`, solution: As suggested 
+1.  Python linking against system's `libpython.X.X.so`, solution: As suggested 
     on `stackoverflow`[todo], modify the setup.py (see `sed -i` in the script).
-3.  `pip --global-option` being ignored or includes not found, solution: Setup 
+2.  `pip --global-option` being ignored or includes not found, solution: Setup 
     your `LD_LIBRARY_PATH` and `C_INCLUDE_PATH` and export them. If the venv is
     active you can also use `$VIRTUAL_ENV`, example:
      
      ```
      export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
      ```
-4.  `/tmp` missing exec permissions (security on some systems), solution: export
+3.  `/tmp` missing exec permissions (security on some systems), solution: export
     another `TMPDIR` as in the example above
     
 
@@ -113,10 +110,11 @@ dependencies are satisfied...
 
 The high level process is:
 
-1.  Install python dependencies. At the moment we are installing: `ncurses`,
-    `readline`, `zlib`, `bzip2` and `sqlite3`
+1.  Install build tools: `m4`, `shtool`, `autoconf`, `automake`, `libtool`
+2.  Install python dependencies. At the moment we are installing: `ncurses`,
+    `readline`, `zlib`, `bzip2`, `lzma`, `gdbm` and `sqlite3`
     
-2.  Install python:
+3.  Install python:
     
     ... the usual process. The only difference is that setup.py is modified to 
     not look into `/usr/loca/lib` and `include`, instead these are replaced with
@@ -127,10 +125,10 @@ The high level process is:
     sed -i "s|/usr/local/include|$PREFIX/include|" ./setup.py
     ```
     
-3.  Install few extra libs on top. They are mainly for SNMP and xml
+4.  Install few extra libs on top. They are mainly for SNMP and xml
     parsing: `libsmi`, `libffi`, `libxml2` and `libxslt`
     
-### Installing more libraries
+### Installing more libraries ###
 
 A function is provided to take care of the heavy lifting: `installLib` use it
 the following way:
