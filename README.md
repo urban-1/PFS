@@ -28,7 +28,7 @@ Drop me a message if you have successfully run this on different distros/platfor
 
 ## Requirements ##
 
-Build tools: g++, make. All other tools will be installed if missing
+Build tools: gcc, make. All other tools will be installed if missing
 
 ## Usage ##
 
