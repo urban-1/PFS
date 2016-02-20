@@ -1,42 +1,87 @@
 #!/bin/bash
 
+#
+# 
+#
+function usage {
+    echo
+    echo "Create Usage:"
+    echo
+    echo "  $0 -p /path/to/new/env -v python-version [-r pip-requirements-file]"
+    echo
+    echo "  Options: "
+    echo "  -p       Path to the new virtual environment"
+    echo "  -v       Python version (optional) - if missing, autodiscover"
+    echo "  -r       Python requirements file (optional)"
+    echo 
+    echo
+    echo "Delete Usage:"
+    echo
+    echo "  $0 -p /path/to/new/env -c [-a]"
+    echo
+    echo "  Options:"
+    echo "  -c       Clean Python virtual environment ('bin', 'lib' folders)"
+    echo "  -a       Remove all except 'local' developement environment (optional)"
+    echo
+    echo "Build package:"
+    echo
+    echo "  $0 -p /path/to/new/env -b [/install/path/on/system]"
+    echo
+    echo "  Options:"
+    echo "  -b       Build flag and installation path. If no path given '/usr/local' is the default"
+    echo "  -v       Python version (optional) - if missing, autodiscover"
+    echo 
+    echo "Global options:"
+    echo
+    echo "  -h       This help message"
+    echo "  -p       Path to the virtual environment"
+    echo
+    exit 1
+}
+
 venv=""
 freeze=""
 clean=0
 all=0
+buildPackage=0
 
-while getopts "hr:v:p:ca" opt; do
+while getopts ":hr:v:p:cab:" opt; do
   case $opt in
     h)
-        echo "Create Usage: $0 -p /path/to/new/env -r pip-requirements-file -v python-version"
-        echo "   OR"
-        echo "Delete Usage: $0 -p /path/to/new/env -c [-a]"
-        echo "   -a removes sources and local installs" 
-        exit 1
-      ;;
+        usage
+        ;;
     r)
         freeze=$OPTARG
-      ;;
+        ;;
     v)
         version=$OPTARG
-      ;;
+        ;;
     p)
         venv="$OPTARG"
-      ;;
+        ;;
     c)
         clean=1
-      ;;
+        ;;
     a)
         all=1
-      ;;
+        ;;
+    b)
+        buildPackage=1
+        INSTALL_PREFIX=$OPTARG
+        ;;
     :)
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
+        if [ "$OPTARG" == "b" ]; then
+            buildPackage=1
+            INSTALL_PREFIX="/usr/local"
+            continue
+        fi
+        echo "Option -$OPTARG requires an argument." >&2
+        exit 1
+        ;;
     *)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
   esac
 done
 
@@ -46,14 +91,89 @@ if [ "$venv" == "" ]; then
     exit 1
 fi
 
-# SETUP 
+# 
+# SETUP  ---------------------------------------
+# 
+DN=/dev/null
 mkdir -p $venv 2> $DN
 ROOT="`readlink -f "$venv"`"
-echo "BUILDING IN $ROOT"
 PREFIX="$ROOT/local"
-DN=/dev/null
 
-if [ $clean -eq 1 ]; then
+# Set the basics
+mkdir -p "$ROOT/src"
+mkdir -p "$ROOT/local"
+mkdir -p "$ROOT/bin"
+mkdir -p "$ROOT/lib"
+
+SRCDIR="$ROOT/src"
+
+LIBDIR="$PREFIX/lib"
+LIB64DIR="$PREFIX/lib64"
+INCDIR="$PREFIX/include"
+BINDIR="$ROOT/bin"
+# We use it a lot
+PREOPT="--prefix=$PREFIX"
+
+# Python version settings
+PYTHON=`which python`
+if [ "$version" != "" ]; then
+
+    PYVER=`echo "$version" | cut -d'.' -f1`
+    PYVER="$PYVER.`echo "$version" | cut -d'.' -f2`"
+
+    echo "* Checking user-provided $PREFIX/bin/python$PYVER"
+    if [ -f "$PREFIX/bin/python$PYVER" ]; then
+        PYTHON="$PREFIX/bin/python$PYVER"
+    fi
+else
+    # Try to figure it out
+    echo "* Python version autodiscover..."
+    if [ -e "$PREFIX/bin/python" ]; then
+        PYTHON="$PREFIX/bin/python"
+    fi
+    
+    PYVER=`$PYTHON -V 2>&1 | cut -d' ' -f2`
+    PYVER=`echo "$PYVER" | cut -d'.' -f1,2`
+    
+    # In any case
+    pypath=`dirname "$PYTHON"`
+    echo "  - Found python $PYVER in $pypath"
+fi
+
+#
+# BUILD PACKAGE
+#
+if [ $buildPackage -eq 1 ]; then
+    echo "* Creating package from the local environment"
+    echo "  - Environment Location: $PREFIX"
+    echo "  - Installation Path: $INSTALL_PREFIX"
+    
+    # Check, checkinstall
+    if [ "`which checkinstall`" == "" ]; then
+        echo "!! checkinstall is required... "
+        echo "!! You can manually cp -r $PREFIX /usr/local but is not suggested."
+        exit 1
+    fi
+    
+    checkinstall -D -y --install=no \
+                 --fstrans=yes \
+                 --pkgname="python-pfs" \
+                 --maintainer="`whoami`" \
+                 --provides=python \
+                 --requires="?" \
+                 --pkgversion=$PYVER
+            cp -r "$PREFIX/*" "$INSTALL_PREFIX/*" 
+    
+    # Clean up
+    rm ./description-pak
+    rm -r ./doc-pak/
+    exit 0
+    
+
+#
+# CLEAN UP
+#
+elif [ $clean -eq 1 ]; then
     if [ "`readlink -f $ROOT`" == "/usr/local" ]; then
         echo "Get serious.."
         exit 1
@@ -69,34 +189,11 @@ if [ $clean -eq 1 ]; then
     exit 0
 fi
 
-        
+#
+# BUILD DEV AND PYTHON ENVIRONMENTs
+#
+echo "** BUILDING IN $ROOT **"
 echo "* Setting Up..."
-
-# Set the basics
-mkdir -p "$ROOT/src"
-mkdir -p "$ROOT/local"
-mkdir -p "$ROOT/bin"
-mkdir -p "$ROOT/lib"
-
-SRCDIR="$ROOT/src"
-
-LIBDIR="$PREFIX/lib"
-LIB64DIR="$PREFIX/lib64"
-INCDIR="$PREFIX/include"
-BINDIR="$ROOT/bin"
-
-PYVER=`echo "$version" | cut -d'.' -f1`
-PYVER="$PYVER.`echo "$version" | cut -d'.' -f2`"
-
-# We use it a lot
-PREOPT="--prefix=$PREFIX"
-
-PYTHON=`which python`
-
-echo "* Checking $PREFIX/bin/python$PYVER"
-if [ -f "$PREFIX/bin/python$PYVER" ]; then
-    PYTHON="$PREFIX/bin/python$PYVER"
-fi
     
 # Allow user to provide tools like autoconf...
 export PATH=~/bin:$PATH
@@ -122,7 +219,7 @@ function downloadSrc {
     echo "  - Checking $SRCDIR/$base"
     if [ ! -e "$SRCDIR/$base" ]; then
         echo "  - Getting it..."
-        wget --no-check-certificate $what -O "$SRCDIR/$base"
+        wget -q --no-check-certificate $what -O "$SRCDIR/$base"
     fi
 }
 
@@ -306,17 +403,30 @@ fi
 
 
 if [ ! -e "$ROOT/bin/python" ]; then
-    echo "* Getting virtualenv..."
-    rm ./virtualenv.py* 2> $DN; wget --no-check-certificate -q https://raw.github.com/pypa/virtualenv/master/virtualenv.py
+    echo "* Installing virtualenv..."
+    if [ ! -e $SRCDIR/virtualenv-14.0.6.tar.gz ]; then
+        echo "  - Getting virtualenv..."
+        wget --no-check-certificate "https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz" -O "$SRCDIR/virtualenv-14.0.6.tar.gz"
+    fi
+    if [ ! -e $SRCDIR/virtualenv-14.0.6 ]; then
+        echo "  - Extracting virtualenv..."
+        (cd $SRCDIR && tar -xvf virtualenv-14.0.6.tar.gz)
+    fi
 
 
     echo "* Creating base structure"
     echo "  - Using $PYTHON"
-    $PYTHON ./virtualenv.py -p "$PYTHON" --no-setuptools "$ROOT"
+    
+    (cd $SRCDIR/virtualenv-14.0.6 && $PYTHON ./virtualenv.py --no-site-packages --no-setuptools "$ROOT")
+    rc=$?
     mv ./virtualenv.py "$ROOT/bin/"
     rm ./virtualenv.pyc 2> $DN
     rm -r ./__pycache__ 2> $DN
-
+    
+    if [ $rc -ne 0 ]; then
+        echo "Failed to build virtualenv..."
+        exit 1
+    fi
     # 
     # Handle export variables in `activate`
     # 
@@ -356,7 +466,7 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
 
     freezeInstall
 else
-    echo "Skipping Virtual environment cause it is there. If you want to clean it run:"
+    echo "* Skipping Virtual environment cause it is there. If you want to clean it run:"
     echo "  $0 -c -p $ROOT"
 fi
 
