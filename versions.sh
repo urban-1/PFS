@@ -20,3 +20,5 @@ V_FFI=3.2.1
 # but it failes with the local versions...
 V_XML2=2.9.1
 V_XSLT=1.1.28
+
+V_VENV=14.0.6

@@ -1,11 +1,15 @@
 #!/bin/bash
 
 #
+# PFS: Python From Scratch
 # 
+# Compile python from scratch, install in a local development environment and 
+# create a python virtual environment on top, that has no system dependencies.
 #
+
 function usage {
     echo
-    echo "Create Usage:"
+    echo "Create environment:"
     echo
     echo "  $0 -p /path/to/new/env -v python-version [-r pip-requirements-file]"
     echo
@@ -13,9 +17,10 @@ function usage {
     echo "  -p       Path to the new virtual environment"
     echo "  -v       Python version (optional) - if missing, autodiscover"
     echo "  -r       Python requirements file (optional)"
+    echo "  -j       Number of cores/threads to use when compiling (default=2)"
     echo 
     echo
-    echo "Delete Usage:"
+    echo "Delete environment:"
     echo
     echo "  $0 -p /path/to/new/env -c [-a]"
     echo
@@ -30,23 +35,30 @@ function usage {
     echo "  Options:"
     echo "  -b       Build flag and installation path. If no path given '/usr/local' is the default"
     echo "  -v       Python version (optional) - if missing, autodiscover"
+    echo "  -R       Build .rpm (RHEL)"
+    echo "  -D       Build .deb (Debian)"
+    echo "  -S       Build .tgz (SlackWare)"
     echo 
     echo "Global options:"
     echo
+    echo "  -d       Bebug mode == show output"
     echo "  -h       This help message"
     echo "  -p       Path to the virtual environment"
     echo
     exit 1
 }
 
+# option vars
 venv=""
 freeze=""
 clean=0
 all=0
 buildPackage=0
 buildType=""
+verbose=0
+cores=2
 
-while getopts ":hr:v:p:cab:DRS" opt; do
+while getopts ":hr:v:p:cab:DRSdj:" opt; do
   case $opt in
     h)
         usage
@@ -69,6 +81,16 @@ while getopts ":hr:v:p:cab:DRS" opt; do
     b)
         buildPackage=1
         INSTALL_PREFIX=$OPTARG
+        ;;
+    d)
+        verbose=1
+        ;;
+    j)
+        if [[ $OPTARG =~ ^-?[0-9]+$ ]]; then
+            cores=$OPTARG
+        else
+            echo "!!! IGNORING number of cores/threads - not an integer ($OPTARG)"
+        fi
         ;;
     R) buildType=R;;
     S) buildType=S;;
@@ -95,6 +117,9 @@ if [ "$venv" == "" ]; then
     exit 1
 fi
 
+
+
+
 # 
 # SETUP  ---------------------------------------
 # 
@@ -102,6 +127,28 @@ DN=/dev/null
 mkdir -p $venv 2> $DN
 ROOT="`readlink -f "$venv"`"
 PREFIX="$ROOT/local"
+LOGDIR="$ROOT/log"
+mkdir -p "$LOGDIR"
+RND=$RANDOM
+touch "$LOGDIR/build-$RND.log"
+
+
+
+# Set verbosity
+exec 3>&1
+exec 4>&2
+
+#
+# Echo on both screen and log
+#
+function prt {
+    echo "$1" | tee -a "$LOGDIR/build-$RND.log" 1>&3
+}
+
+if [ $verbose -eq 0 ]; then
+    exec 1>> "$LOGDIR/build-$RND.log"
+    exec 2>> "$LOGDIR/build-$RND.log"
+fi
 
 # Set the basics
 mkdir -p "$ROOT/src"
@@ -125,13 +172,13 @@ if [ "$version" != "" ]; then
     PYVER=`echo "$version" | cut -d'.' -f1`
     PYVER="$PYVER.`echo "$version" | cut -d'.' -f2`"
 
-    echo "* Checking user-provided $PREFIX/bin/python$PYVER"
+    prt " * Checking user-provided $PREFIX/bin/python$PYVER"
     if [ -f "$PREFIX/bin/python$PYVER" ]; then
         PYTHON="$PREFIX/bin/python$PYVER"
     fi
 else
     # Try to figure it out
-    echo "* Python version autodiscover..."
+    prt " * Python version autodiscover..."
     
     if [ -e "$PREFIX/bin/python" ]; then
         PYTHON="$PREFIX/bin/python"
@@ -148,16 +195,16 @@ else
     
     # In any case
     pypath=`dirname "$PYTHON"`
-    echo "  - Found python $PYVER in $pypath"
+    prt "  - Found python $PYVER in $pypath"
 fi
 
 #
 # BUILD PACKAGE
 #
 if [ $buildPackage -eq 1 ]; then
-    echo "* Creating package from the local environment"
-    echo "  - Environment Location: $PREFIX"
-    echo "  - Installation Path: $INSTALL_PREFIX"
+    prt " * Creating package from the local environment"
+    prt "  - Environment Location: $PREFIX"
+    prt "  - Installation Path: $INSTALL_PREFIX"
     
     # Check, checkinstall
     if [ "`which checkinstall`" == "" ]; then
@@ -170,14 +217,14 @@ if [ $buildPackage -eq 1 ]; then
         buildType="D"
     fi
     
-    echo "* Build Type $buildType"
+    prt " * Build Type $buildType"
     
     echo "Custom python build
 
 Build with PFS for $($PYTHON -V)
 " >> ./description-pak
     
-    echo "* Building package: this will take time (up to 10 mins), go refill your coffee..."
+    prt " * Building package: this will take time (up to 10 mins), go refill your coffee..."
     sleep 5
     checkinstall -$buildType -y \
                  --install=no \
@@ -203,12 +250,12 @@ elif [ $clean -eq 1 ]; then
         echo "Get serious.."
         exit 1
     fi
-    echo "  - Removing Virtual environment basics"
+    prt "  - Removing Virtual environment basics"
     rm -rf "$ROOT/lib" 2> $DN
     rm -rf "$ROOT/bin" 2> $DN
     
     if [ $all -eq 1 ]; then
-        echo "  - Removing all sources"
+        prt "  - Removing all sources"
         rm -rf "$ROOT/src" 2> $DN
     fi
     exit 0
@@ -217,21 +264,26 @@ fi
 #
 # BUILD DEV AND PYTHON ENVIRONMENTs
 #
-echo "** BUILDING IN $ROOT **"
-echo "* Setting Up..."
+prt " ** BUILDING IN $ROOT with $cores cores **"
+prt " * Setting Up..."
     
 # Allow user to provide tools like autoconf...
 export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
 export C_INCLUDE_PATH="$INCDIR:$INCDIR/ncurses:$INCDIR/readline:$PREFIX/lib/libffi-$V_FFI/include:$C_INCLUDE_PATH"
 
+# Load versions
+V="`dirname $0`/versions.sh"
+prt " * Loading versions from $V"
+source $V
+
 function freezeInstall() {
     if [ "$freeze" == "" ]; then
-        echo " * Skipping requirements"
+        prt " * Skipping requirements"
         return
     fi
     if [ ! -f "$freeze" ]; then
-        echo " * Requirements File NOT FOUND?!"
+        prt " * Requirements File NOT FOUND?!"
         return
     fi
     
@@ -241,9 +293,9 @@ function freezeInstall() {
 function downloadSrc {
     what=$1
     base=$2
-    echo "  - Checking $SRCDIR/$base"
+    prt "  - Checking $SRCDIR/$base"
     if [ ! -e "$SRCDIR/$base" ]; then
-        echo "  - Getting it..."
+        prt "  - Getting it..."
         wget -q --no-check-certificate $what -O "$SRCDIR/$base"
     fi
 }
@@ -254,7 +306,7 @@ function downloadSrc {
 function unzipSrc {
     what=$1
     folder=$2
-    echo " * UNZIP: $what"
+    prt "  - unzip: $what"
     if [ ! -d "$SRCDIR/$folder" ]; then
         (cd "$SRCDIR" && unzip "$what")
     fi
@@ -263,7 +315,7 @@ function unzipSrc {
 function untarSrc {
     what=$1
     folder=$2
-    echo " * UNTAR: $what"
+    prt "  - untar: $what"
     if [ ! -d "$SRCDIR/$folder" ]; then
         (cd "$SRCDIR" && tar -xvf "$what")
     fi
@@ -289,18 +341,18 @@ function installPython {
     
     cd "$SRCDIR/$folder"
     
-    make clean
+    make clean 2> $DN
     ./configure --enable-shared $PREOPT --enable-ipv6 --with-threads
     
     # Take care of cross compile
     sed -i "s|/usr/local/lib|$PREFIX/lib|" ./setup.py
     sed -i "s|/usr/local/include|$PREFIX/include|" ./setup.py
     
-    make && make install
+    make -j $cores && make install
     
     # if successfull set the new python
     if [ -e "$PREFIX/bin/python$PYVER" ]; then
-        echo "  - Setting new python to \"$PREFIX/bin/python$PYVER\""
+        prt "  - Setting new python to \"$PREFIX/bin/python$PYVER\""
         PYTHON="$PREFIX/bin/python$PYVER"
     fi
     
@@ -318,10 +370,10 @@ function installLib {
     type="$1"; shift
     opts="$@ $PREOPT  --enable-shared"
     
-    echo " * Installing lib $base"
+    prt " * Installing lib $base"
     
     if [ -e "$INCDIR/$checkFile" ]; then 
-        echo "  - Skipping, seems installed"
+        prt "  - Skipping, seems installed"
         return
     fi
     
@@ -335,16 +387,16 @@ function installLib {
     # Get in the folder
     cd "$SRCDIR/$folder"
     
-    make clean
+    make clean 2> $DN
     makeArgs=""
     confRC=0
     makeRC=0
     if [ $type == "autogen" ]; then
-        echo "  - Running: './autogen.sh $opts'"
+        prt "  - Running: './autogen.sh $opts'"
         ./autogen.sh $opts
         confRC=$?
     elif [ $type == "confmake" ]; then
-        echo "  - Running: './configure $opts'"
+        prt "  - Running: './configure $opts'"
         ./configure $opts
         confRC=$?
     elif [ $type == "confmake_readline" ]; then
@@ -365,14 +417,14 @@ function installLib {
         return $confRC
     fi
     
-    echo "  - Running: 'make && make install $makeArgs'"
-    make $makeArgs && make $makeArgs install 
+    prt "  - Running: 'make $makeArgs && make $makeArgs install "
+    make $makeArgs -j $cores && make $makeArgs install 
     makeRC=$?
     
     cd "$p"
     
     if [ $makeRC -ne 0 ]; then
-        echo " !!! ERROR MAKING"
+        echo " !!! ERROR MAKING !!!"
         return $makeRC
     fi
     
@@ -384,10 +436,6 @@ function installLib {
 # already installed libs will be skipped
 #
 if [ "$version" != "" ]; then
-    # get versions...
-    V="`dirname $0`/versions.sh"
-    echo "* Loading versions from $V"
-    source $V
     
     # Build... the build tools
     export PATH="$PREFIX/bin:$PATH"
@@ -514,21 +562,21 @@ fi
 
 
 if [ ! -e "$ROOT/bin/python" ]; then
-    echo "* Installing virtualenv..."
-    if [ ! -e $SRCDIR/virtualenv-14.0.6.tar.gz ]; then
-        echo "  - Getting virtualenv..."
-        wget --no-check-certificate "https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz" -O "$SRCDIR/virtualenv-14.0.6.tar.gz"
+    prt " * Installing virtualenv..."
+    if [ ! -e $SRCDIR/virtualenv-$V_VENV.tar.gz ]; then
+        prt "  - Getting virtualenv..."
+        wget -q --no-check-certificate "https://pypi.python.org/packages/source/v/virtualenv/virtualenv-$V_VENV.tar.gz" -O "$SRCDIR/virtualenv-$V_VENV.tar.gz"
     fi
-    if [ ! -e $SRCDIR/virtualenv-14.0.6 ]; then
-        echo "  - Extracting virtualenv..."
-        (cd $SRCDIR && tar -xvf virtualenv-14.0.6.tar.gz)
+    if [ ! -e $SRCDIR/virtualenv-$V_VENV ]; then
+        prt "  - Extracting virtualenv..."
+        (cd $SRCDIR && tar -xvf virtualenv-$V_VENV.tar.gz)
     fi
 
 
-    echo "* Creating base structure"
-    echo "  - Using $PYTHON"
+    prt " * Creating base structure"
+    prt "  - Using $PYTHON"
     
-    (cd $SRCDIR/virtualenv-14.0.6 && $PYTHON ./virtualenv.py --no-site-packages --no-setuptools "$ROOT")
+    (cd $SRCDIR/virtualenv-$V_VENV && $PYTHON ./virtualenv.py --no-site-packages --no-setuptools "$ROOT")
     rc=$?
     rm ./*.pyc 2> $DN
     rm -r ./__pycache__ 2> $DN
@@ -565,13 +613,13 @@ export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/
     fi|" "$ROOT/bin/activate"
 
 
-    echo "* Changing to new environment ($BINDIR/activate)"
+    prt " * Changing to new environment ($BINDIR/activate)"
     source "$BINDIR/activate"
     
-    echo "* Getting pip"
+    prt " * Getting pip"
     
     # Use source python...
-    cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py
+    cd "$ROOT/bin/" && rm ./get-pip.py* 2> $DN;  wget -q --no-check-certificate https://bootstrap.pypa.io/get-pip.py && python ./get-pip.py
     if [ $? -ne 0 ]; then
         echo "Failed to install pip"
         exit 4
@@ -579,7 +627,7 @@ export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/
 
     freezeInstall
 else
-    echo "* Skipping Virtual environment cause it is there. If you want to clean it run:"
+    prt " * Skipping Virtual environment cause it is there. If you want to clean it run:"
     echo "  $0 -c -p $ROOT"
 fi
 
