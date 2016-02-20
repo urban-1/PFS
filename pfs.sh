@@ -132,8 +132,15 @@ if [ "$version" != "" ]; then
 else
     # Try to figure it out
     echo "* Python version autodiscover..."
+    
     if [ -e "$PREFIX/bin/python" ]; then
         PYTHON="$PREFIX/bin/python"
+    
+    else
+        tmp=`ls "$PREFIX/bin/python"{2..100}.{0..100} 2> $DN | sort | tail -n1`
+        if [ "$tmp" != "" ]; then
+            PYTHON="$tmp"
+        fi
     fi
     
     PYVER=`$PYTHON -V 2>&1 | cut -d' ' -f2`
@@ -538,11 +545,13 @@ if [ ! -e "$ROOT/bin/python" ]; then
 OLD_ORACLE_HOME=\"\$ORACLE_HOME\"
 OLD_LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH\"
 OLD_C_INCLUDE_PATH=\"\$C_INCLUDE_PATH\"
+OLD_LDFLAGS=\"\$LDFLAGS\"
 
 export ORACLE_HOME=\"\$VIRTUAL_ENV/addons/instantclient_12_1\"
-LD_LIBRARY_PATH=\"\$VIRTUAL_ENV/local/lib:\$VIRTUAL_ENV/local/lib64:\$ORACLE_HOME:\$LD_LIBRARY_PATH\"
+export LDFLAGS=\"-L\$VIRTUAL_ENV/local/lib -L\$VIRTUAL_ENV/local/lib64\"
+export LD_LIBRARY_PATH=\"\$VIRTUAL_ENV/local/lib:\$VIRTUAL_ENV/local/lib64:\$ORACLE_HOME:\$LD_LIBRARY_PATH\"
 export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/libxml2:\$VIRTUAL_ENV/local/lib/libffi-$V_FFI/include:\$C_INCLUDE_PATH\"
-export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
+" >> "$ROOT/bin/activate"
     
     #
     # Clean up in deactivate...
@@ -550,6 +559,7 @@ export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     sed -i "s|deactivate () {|deactivate () {\n\
     if [ ! \"\${1-}\" = \"nondestructive\" ] ; then\n\
         export ORACLE_HOME=\"\$OLD_ORACLE_HOME\"\n\
+        export LDFLAGS=\"\$OLD_LDFLAGS\"\n\
         export LD_LIBRARY_PATH=\"\$OLD_LD_LIBRARY_PATH\"\n\
         export C_INCLUDE_PATH=\"\$OLD_C_INCLUDE_PATH\"\n\
     fi|" "$ROOT/bin/activate"
