@@ -198,7 +198,7 @@ echo "* Setting Up..."
 # Allow user to provide tools like autoconf...
 export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
-export C_INCLUDE_PATH="$INCDIR/ncurses:$INCDIR/readline:$INCDIR/libxslt/:$INCDIR/libxml2:$PREFIX/lib/libffi-3.2.1/include:$C_INCLUDE_PATH"
+export C_INCLUDE_PATH="$INCDIR/ncurses:$INCDIR/readline:$INCDIR/libxslt/:$INCDIR/libxml2:$PREFIX/lib/libffi-$V_FFI/include:$C_INCLUDE_PATH"
 
 function freezeInstall() {
     if [ "$freeze" == "" ]; then
@@ -310,61 +310,131 @@ function installLib {
     cd "$SRCDIR/$folder"
     
     
-    # In any case
-    export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
-    
     makeArgs=""
-    
+    confRC=0
+    makeRC=0
     if [ $type == "autogen" ]; then
         echo "  - Running: './autogen.sh $opts'"
         ./autogen.sh $opts
+        confRC=$?
     elif [ $type == "confmake" ]; then
         echo "  - Running: './configure $opts'"
         ./configure $opts
+        confRC=$?
     elif [ $type == "confmake2" ]; then
         # bzlib
         makeArgs="PREFIX=$PREFIX"
         sed -i "s|CC=gcc|CC=gcc -fPIC|" ./Makefile
     fi
     
+    if [ $confRC -ne 0 ]; then
+        echo " !!! ERROR CONFIGURING"
+        cd "$p"
+        return $confRC
+    fi
     echo "  - Running: 'make && make install $makeArgs'"
     make && make install $makeArgs
+    makeRC=$?
     
     cd "$p"
+    
+    if [ $makeRC -ne 0 ]; then
+        echo " !!! ERROR MAKING"
+        return $makeRC
+    fi
+    
+    return 0
 }
 
-
+#
+# If a version was given, we have to go through the installation process. Any
+# already installed libs will be skipped
+#
 if [ "$version" != "" ]; then
+    # get versions...
+    V="`dirname $0`/versions.sh"
+    echo "* Loading versions from $V"
+    source $V
+    
+    # Build... the build tools
+    export PATH="$PREFIX/bin:$PATH"
+    
+    if [ "`which m4`" == "" ]; then
+        installLib "http://ftp.gnu.org/gnu/m4/m4-$V_M4.tar.gz" \
+               "m4-$V_M4.tar.gz" \
+               "m4-$V_M4" \
+               "../bin/m4" \
+               "confmake"
+    fi
+    
+    if [ "`which shtool`" == "" ]; then
+        installLib "ftp://ftp.gnu.org/gnu/shtool/shtool-$V_SHTOOL.tar.gz" \
+               "shtool-$V_SHTOOL.tar.gz" \
+               "shtool-$V_SHTOOL" \
+               "../bin/shtool" \
+               "confmake"
+    fi
+    
+    if [ "`which autoconf`" == "" ]; then
+        installLib "http://ftp.gnu.org/gnu/autoconf/autoconf-$V_AUTOCONF.tar.gz" \
+               "autoconf-$V_AUTOCONF.tar.gz" \
+               "autoconf-$V_AUTOCONF" \
+               "../bin/autoconf" \
+               "confmake"
+    fi
+    
+    if [ "`which automake`" == "" ]; then
+        installLib "http://ftp.gnu.org/gnu/automake/automake-$V_AUTOMAKE.tar.gz" \
+               "automake-$V_AUTOMAKE.tar.gz" \
+               "automake-$V_AUTOMAKE" \
+               "../bin/automake" \
+               "confmake"
+    fi
+    
+    if [ "`which libtool`" == "" ]; then
+        installLib "http://ftpmirror.gnu.org/libtool/libtool-$V_LIBTOOL.tar.gz" \
+               "libtool-$V_LIBTOOL.tar.gz" \
+               "libtool-$V_LIBTOOL" \
+               "../bin/libtool" \
+               "confmake"
+    fi
 
     # DEPENDENCIES
-    installLib "http://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.0.tar.gz" \
-               "ncurses-6.0.tar.gz" \
-               "ncurses-6.0" \
+    
+    installLib "http://tukaani.org/xz/xz-$V_XZ.tar.gz" \
+               "xz-$V_XZ.tar.gz" \
+               "xz-$V_XZ" \
+               "lzma.h" \
+               "confmake"
+               
+    installLib "http://ftp.gnu.org/pub/gnu/ncurses/ncurses-$V_NCURSES.tar.gz" \
+               "ncurses-$V_NCURSES.tar.gz" \
+               "ncurses-$V_NCURSES" \
                "ncurses/curses.h" \
                "confmake" \
                "--with-shared --without-normal"
                
-    installLib "ftp://ftp.cwru.edu/pub/bash/readline-6.3.tar.gz" \
-               "readline-6.3.tar.gz" \
-               "readline-6.3" \
+    installLib "ftp://ftp.cwru.edu/pub/bash/readline-$V_READLINE.tar.gz" \
+               "readline-$V_READLINE.tar.gz" \
+               "readline-$V_READLINE" \
                "readline/readline.h" \
                "confmake"
     
-    installLib "http://prdownloads.sourceforge.net/libpng/zlib-1.2.8.tar.gz?download" \
-               "zlib-1.2.8.tar.gz" \
-               "zlib-1.2.8" \
+    installLib "http://prdownloads.sourceforge.net/libpng/zlib-$V_ZLIB.tar.gz?download" \
+               "zlib-$V_ZLIB.tar.gz" \
+               "zlib-$V_ZLIB" \
                "zlib.h" \
                "confmake"
                
-    installLib "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz" \
-               "bzip2-1.0.6.tar.gz" \
-               "bzip2-1.0.6" \
+    installLib "http://www.bzip.org/$V_BZ2/bzip2-$V_BZ2.tar.gz" \
+               "bzip2-$V_BZ2.tar.gz" \
+               "bzip2-$V_BZ2" \
                "bzlib.h" \
                "confmake2"
     
-    installLib "https://www.sqlite.org/2016/sqlite-autoconf-3110000.tar.gz" \
-               "sqlite-autoconf-3110000.tar.gz" \
-               "sqlite-autoconf-3110000" \
+    installLib "https://www.sqlite.org/2016/sqlite-autoconf-$V_SQLITE.tar.gz" \
+               "sqlite-autoconf-$V_SQLITE.tar.gz" \
+               "sqlite-autoconf-$V_SQLITE" \
                "sqlite3.h" \
                "confmake"
                
@@ -374,28 +444,28 @@ if [ "$version" != "" ]; then
     
     # POST-LIBS and TOOLS
     #  - SNMP/SMI
-    installLib "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-0.5.0.tar.gz" \
-               "libsmi-0.5.0.tar.gz" \
-               "libsmi-0.5.0" \
+    installLib "https://www.ibr.cs.tu-bs.de/projects/libsmi/download/libsmi-$V_SMI.tar.gz" \
+               "libsmi-$V_SMI.tar.gz" \
+               "libsmi-$V_SMI" \
                "smi.h" \
                "confmake"
                
-    installLib "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz" \
-               "libffi-3.2.1.tar.gz" \
-               "libffi-3.2.1" \
-               "../lib/libffi-3.2.1/include/ffi.h" \
+    installLib "ftp://sourceware.org/pub/libffi/libffi-$V_FFI.tar.gz" \
+               "libffi-$V_FFI.tar.gz" \
+               "libffi-$V_FFI" \
+               "../lib/libffi-$V_FFI/include/ffi.h" \
                "confmake"
     #  - LXML
-    installLib "https://github.com/GNOME/libxml2/archive/master.tar.gz" \
-               "libxml2.tar.gz" \
-               "libxml2-master" \
+    installLib "https://github.com/GNOME/libxml2/archive/v$V_XML2.tar.gz" \
+               "libxml2-$V_XML2.tar.gz" \
+               "libxml2-$V_XML2" \
                "libxml2/libxml/xmlversion.h" \
                "autogen" \
-               "--with-python=$PREFIX/bin/python$PYVER"
+               "--with-python=$PREFIX/bin/python$PYVER --disable-static --with-history"
     
-    installLib "https://github.com/GNOME/libxslt/archive/master.tar.gz" \
-               "libxslt.tar.gz" \
-               "libxslt-master" \
+    [ $? -eq 0 ] && installLib "https://github.com/GNOME/libxslt/archive/v$V_XSLT.tar.gz" \
+               "libxslt-$V_XSLT.tar.gz" \
+               "libxslt-$V_XSLT" \
                "libxslt/xslt.h" \
                "autogen" \
                " --with-libxml-prefix=$PREFIX"
@@ -438,7 +508,7 @@ OLD_C_INCLUDE_PATH=\"\$C_INCLUDE_PATH\"
 
 export ORACLE_HOME=\"\$VIRTUAL_ENV/addons/instantclient_12_1\"
 LD_LIBRARY_PATH=\"\$VIRTUAL_ENV/local/lib:\$VIRTUAL_ENV/local/lib64:\$ORACLE_HOME:\$LD_LIBRARY_PATH\"
-export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/libxml2:\$VIRTUAL_ENV/local/lib/libffi-3.2.1/include:\$C_INCLUDE_PATH\"
+export C_INCLUDE_PATH=\"\$VIRTUAL_ENV/local/include:\$VIRTUAL_ENV/local/include/libxml2:\$VIRTUAL_ENV/local/lib/libffi-$V_FFI/include:\$C_INCLUDE_PATH\"
 export LD_LIBRARY_PATH\n" >> "$ROOT/bin/activate"
     
     #
@@ -474,7 +544,7 @@ echo "All done, run the follwoing to activeate:"
 echo "source $BINDIR/activate  "
 
 # --global-options:
-# pip install snimpy --global-option=build_ext --global-option=-I$PREFIX/lib/libffi-3.2.1/include --global-option=-I$PREFIX/include  --global-option=build_ext  --global-option=-L$PREFIX/lib64
+# pip install snimpy --global-option=build_ext --global-option=-I$PREFIX/lib/libffi-$V_FFI/include --global-option=-I$PREFIX/include  --global-option=build_ext  --global-option=-L$PREFIX/lib64
 # 
 # Using the env C_INCLUDE_PATH which should have all correct paths:
 # export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
