@@ -4,8 +4,20 @@
 Compile python from scratch, install in a local development environment and 
 create a python virtual environment on top, that has no system dependencies.
 
-**DO NEVER RUN THIS AS ROOT** (see disclaimer - except if you know what you 
-are doing... ie. install at `/usr/local` and remove sources...)
+_Why?:_ Because I couldn't find a complete tutorial or anything similar and I 
+do need a way to easily build the exact same environment on multiple hosts 
+(different distros).
+
+This is different from [pyevn](https://github.com/yyuu/pyenv/) in the following
+ways:
+
+-   Installs locally all required libraries, including build tools when these are
+    missing (if pyenv was doing that, this script wouldn't be needed)
+-   Not intended to be a python environment manager, instead is only the builder
+    while `virtualenv` is used to change between environments
+-   It can build a package using `checkinstall`
+-   Its a lot more immature and untested
+
 
 _NOTE_: Tested on:
 - CentOS 6.6
@@ -22,9 +34,11 @@ they are not available on the host, as long as they are in the `$PATH`.
 
 ## Usage ##
 
+**DO NEVER RUN THIS AS ROOT**
+
 ### Creating a new environment ###
 
-    /path/to/pyenv.sh -p </path/to/new/env> -v <X.Y.Z> [-r <pip-requirements-file>]
+    /path/to/pfs.sh -p </path/to/new/env> -v <X.Y.Z> [-r <pip-requirements-file>]
     
 If a requirements file is given, after the environment is created
 (and sourced) it runs:
@@ -46,7 +60,7 @@ Well, the obvious:
 However, the following will remove the python virtual environment keeping the
 sources and local build environment intact:
 
-    /path/to/pyenv.sh -p </path/to/new/env> -c
+    /path/to/pfs.sh -p </path/to/new/env> -c
     
 Appending `-a` will remove `lib`, `bin` and `src` folders and thus the python
 virtual environment and sources are gone. The venv can be rebuild at any time
