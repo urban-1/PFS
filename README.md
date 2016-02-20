@@ -97,7 +97,8 @@ Few issues I had:
     active you can also use `$VIRTUAL_ENV`, example:
      
      ```
-     export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
+     export PATH; export TMPDIR=~/tmp; export C_INCLUDE_PATH && \
+        pip install cffi --global-option=build_ext  --global-option=-L$VIRTUAL_ENV/lib64
      ```
 3.  `/tmp` missing exec permissions (security on some systems), solution: export
     another `TMPDIR` as in the example above

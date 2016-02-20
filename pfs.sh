@@ -44,8 +44,9 @@ freeze=""
 clean=0
 all=0
 buildPackage=0
+buildType=""
 
-while getopts ":hr:v:p:cab:" opt; do
+while getopts ":hr:v:p:cab:DRS" opt; do
   case $opt in
     h)
         usage
@@ -69,6 +70,9 @@ while getopts ":hr:v:p:cab:" opt; do
         buildPackage=1
         INSTALL_PREFIX=$OPTARG
         ;;
+    R) buildType=R;;
+    S) buildType=S;;
+    D) buildType=D;;
     :)
         if [ "$OPTARG" == "b" ]; then
             buildPackage=1
@@ -155,18 +159,32 @@ if [ $buildPackage -eq 1 ]; then
         exit 1
     fi
     
-    checkinstall -D -y --install=no \
+    if [ "$buildType" == "" ]; then
+        buildType="D"
+    fi
+    
+    echo "* Build Type $buildType"
+    
+    echo "Custom python build
+
+Build with PFS for $($PYTHON -V)
+" >> ./description-pak
+    
+    echo "* Building package: this will take time (up to 10 mins), go refill your coffee..."
+    sleep 5
+    checkinstall -$buildType -y \
+                 --install=no \
                  --fstrans=yes \
                  --pkgname="python-pfs" \
                  --maintainer="`whoami`" \
                  --provides=python \
-                 --requires="?" \
-                 --pkgversion=$PYVER
-            cp -r "$PREFIX/*" "$INSTALL_PREFIX/*" 
+                 --requires="libc6" \
+                 --pkgversion=$PYVER \
+                 --pkggroup="developement" \
+        cp -r "$PREFIX"/bin "$PREFIX"/include "$PREFIX"/lib "$PREFIX"/share "$INSTALL_PREFIX"
     
     # Clean up
     rm ./description-pak
-    rm -r ./doc-pak/
     exit 0
     
 
