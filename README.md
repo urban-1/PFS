@@ -41,9 +41,7 @@ Build tools: g++, make. All other tools will be installed if missing
 If a requirements file is given, after the environment is created (and sourced) 
 it runs:
 
-    export C_INCLUDE_PATH; export PATH export; \
-    pip install -r  <pip-requirements-file> --global-option=build_ext \
-                --global-option=-L$PREFIX/lib64 --global-option=-L$PREFIX/lib
+    pip install -r  <pip-requirements-file> 
     
 Use this environment as any python venv:
 
@@ -112,8 +110,9 @@ dependencies are satisfied...
 The high level process is:
 
 1.  Install build tools: `m4`, `shtool`, `autoconf`, `automake`, `libtool`
+
 2.  Install python dependencies. At the moment we are installing: `ncurses`,
-    `readline`, `zlib`, `bzip2`, `lzma`, `gdbm` and `sqlite3`
+    `readline`, `zlib`, `bzip2`, `lzma`, `gdbm`, `openssl` and `sqlite3`
     
 3.  Install python:
     

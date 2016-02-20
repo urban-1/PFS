@@ -127,16 +127,23 @@ DN=/dev/null
 mkdir -p $venv 2> $DN
 ROOT="`readlink -f "$venv"`"
 PREFIX="$ROOT/local"
+
+# Logging and verbosity
 LOGDIR="$ROOT/log"
 mkdir -p "$LOGDIR"
 RND=$RANDOM
 touch "$LOGDIR/build-$RND.log"
 
-
-
 # Set verbosity
 exec 3>&1
 exec 4>&2
+
+
+if [ $verbose -eq 0 ]; then
+    exec 1>> "$LOGDIR/build-$RND.log"
+    exec 2>> "$LOGDIR/build-$RND.log"
+fi
+
 
 #
 # Echo on both screen and log
@@ -145,12 +152,8 @@ function prt {
     echo "$1" | tee -a "$LOGDIR/build-$RND.log" 1>&3
 }
 
-if [ $verbose -eq 0 ]; then
-    exec 1>> "$LOGDIR/build-$RND.log"
-    exec 2>> "$LOGDIR/build-$RND.log"
-fi
 
-# Set the basics
+# Create folders
 mkdir -p "$ROOT/src"
 mkdir -p "$ROOT/local"
 mkdir -p "$ROOT/bin"
@@ -165,7 +168,9 @@ BINDIR="$ROOT/bin"
 # We use it a lot
 PREOPT="--prefix=$PREFIX"
 
+#
 # Python version settings
+#
 PYTHON=`which python`
 if [ "$version" != "" ]; then
 
@@ -240,7 +245,6 @@ Build with PFS for $($PYTHON -V)
     # Clean up
     rm ./description-pak
     exit 0
-    
 
 #
 # CLEAN UP
@@ -268,14 +272,15 @@ prt " ** BUILDING IN $ROOT with $cores cores **"
 prt " * Setting Up..."
     
 # Allow user to provide tools like autoconf...
-export PATH=~/bin:$PATH
+# export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
 export C_INCLUDE_PATH="$INCDIR:$INCDIR/ncurses:$INCDIR/readline:$PREFIX/lib/libffi-$V_FFI/include:$C_INCLUDE_PATH"
 
 # Load versions
 V="`dirname $0`/versions.sh"
 prt " * Loading versions from $V"
-source $V
+source "$V"
+
 
 function freezeInstall() {
     if [ "$freeze" == "" ]; then
@@ -287,7 +292,7 @@ function freezeInstall() {
         return
     fi
     
-    export C_INCLUDE_PATH; export PATH export; install -r $freeze --global-option=build_ext  --global-option=-L$PREFIX/lib64 --global-option=-L$PREFIX/lib
+    pip install -r "$freeze"
 }
 
 function downloadSrc {
@@ -300,9 +305,7 @@ function downloadSrc {
     fi
 }
 
-#
-# UNZIP/TAR if required
-# 
+ 
 function unzipSrc {
     what=$1
     folder=$2
@@ -322,7 +325,7 @@ function untarSrc {
 }
 
 #
-# Basic python only installation
+# Basic python installation
 #
 function installPython {
     base="Python-$version.tgz"
@@ -388,9 +391,11 @@ function installLib {
     cd "$SRCDIR/$folder"
     
     make clean 2> $DN
+    
     makeArgs=""
     confRC=0
     makeRC=0
+    
     if [ $type == "autogen" ]; then
         prt "  - Running: './autogen.sh $opts'"
         ./autogen.sh $opts
@@ -405,6 +410,10 @@ function installLib {
         makeArgs="SHLIB_LIBS=-lncurses"
         ./configure $opts
         confRC=$?
+    elif [ $type == "confmake_ssl" ]; then
+        # OpenSSL does not understand --enable-shared
+        ./config $PREOPT $@
+        confRC=$?
     elif [ $type == "confmake_bzlib" ]; then
         # bzlib... weird way to set prefix...
         makeArgs="PREFIX=$PREFIX"
@@ -412,19 +421,19 @@ function installLib {
     fi
     
     if [ $confRC -ne 0 ]; then
-        echo " !!! ERROR CONFIGURING"
+        prt " !!! ERROR CONFIGURING !!!"
         cd "$p"
         return $confRC
     fi
     
-    prt "  - Running: 'make $makeArgs && make $makeArgs install "
+    prt "  - Running: 'make $makeArgs && make $makeArgs install'"
     make $makeArgs -j $cores && make $makeArgs install 
     makeRC=$?
     
     cd "$p"
     
     if [ $makeRC -ne 0 ]; then
-        echo " !!! ERROR MAKING !!!"
+        prt " !!! ERROR MAKING !!!"
         return $makeRC
     fi
     
@@ -439,7 +448,7 @@ if [ "$version" != "" ]; then
     
     # Build... the build tools
     export PATH="$PREFIX/bin:$PATH"
-    export LDFLAGS="-L$PREFIX/lib -L$PREFIX/lib64"
+    export LDFLAGS="-L$PREFIX/lib"
     
     if [ "`which m4`" == "" ]; then
         installLib "http://ftp.gnu.org/gnu/m4/m4-$V_M4.tar.gz" \
@@ -519,11 +528,19 @@ if [ "$version" != "" ]; then
                "sqlite-autoconf-$V_SQLITE" \
                "sqlite3.h" \
                "confmake"
+               
     installLib "ftp://ftp.gnu.org/gnu/gdbm/gdbm-$V_DBM.tar.gz" \
                "gdbm-$V_DBM.tar.gz" \
                "gdbm-$V_DBM" \
                "gdbm.h" \
-               "confmake"      
+               "confmake"
+               
+    installLib "https://github.com/openssl/openssl/archive/OpenSSL_$V_SSL.tar.gz" \
+               "OpenSSL_$V_SSL.tar.gz" \
+               "openssl-OpenSSL_$V_SSL" \
+               "openssl/ssl.h" \
+               "confmake_ssl" \
+               "shared zlib threads"
                
     # INSTALL PYTHON
     installPython
@@ -631,7 +648,7 @@ else
     echo "  $0 -c -p $ROOT"
 fi
 
-echo "All done, run the follwoing to activeate:"
+echo "All done, run the following to activeate:"
 echo "source $BINDIR/activate  "
 
 # --global-options:
