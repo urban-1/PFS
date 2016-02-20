@@ -4,10 +4,6 @@
 Compile python from scratch, install in a local development environment and 
 create a python virtual environment on top, that has no system dependencies.
 
-_Why?:_ Because I couldn't find a complete tutorial or anything similar and I 
-do need a way to easily build the same environment on multiple hosts (different 
-distros).
-
 **DO NEVER RUN THIS AS ROOT** (see disclaimer - except if you know what you 
 are doing... ie. install at `/usr/local` and remove sources...)
 

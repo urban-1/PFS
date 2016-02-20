@@ -198,7 +198,7 @@ echo "* Setting Up..."
 # Allow user to provide tools like autoconf...
 export PATH=~/bin:$PATH
 export LD_LIBRARY_PATH="$LIBDIR:$LIB64DIR"
-export C_INCLUDE_PATH="$INCDIR/ncurses:$INCDIR/readline:$INCDIR/libxslt/:$INCDIR/libxml2:$PREFIX/lib/libffi-$V_FFI/include:$C_INCLUDE_PATH"
+export C_INCLUDE_PATH="$INCDIR:$INCDIR/ncurses:$INCDIR/readline:$PREFIX/lib/libffi-$V_FFI/include:$C_INCLUDE_PATH"
 
 function freezeInstall() {
     if [ "$freeze" == "" ]; then
@@ -265,13 +265,14 @@ function installPython {
     cd "$SRCDIR/$folder"
     
     make clean
-    ./configure --enable-shared $PREOPT
+    ./configure --enable-shared $PREOPT --enable-ipv6 --with-threads
     
     # Take care of cross compile
     sed -i "s|/usr/local/lib|$PREFIX/lib|" ./setup.py
     sed -i "s|/usr/local/include|$PREFIX/include|" ./setup.py
     
     make && make install
+    
     # if successfull set the new python
     if [ -e "$PREFIX/bin/python$PYVER" ]; then
         echo "  - Setting new python to \"$PREFIX/bin/python$PYVER\""
@@ -309,7 +310,7 @@ function installLib {
     # Get in the folder
     cd "$SRCDIR/$folder"
     
-    
+    make clean
     makeArgs=""
     confRC=0
     makeRC=0
@@ -321,8 +322,14 @@ function installLib {
         echo "  - Running: './configure $opts'"
         ./configure $opts
         confRC=$?
-    elif [ $type == "confmake2" ]; then
-        # bzlib
+    elif [ $type == "confmake_readline" ]; then
+        # readline needs to be linked against ncurses...
+        # LD_LIBRARY_PATH is ignored
+        makeArgs="SHLIB_LIBS=-lncurses"
+        ./configure $opts
+        confRC=$?
+    elif [ $type == "confmake_bzlib" ]; then
+        # bzlib... weird way to set prefix...
         makeArgs="PREFIX=$PREFIX"
         sed -i "s|CC=gcc|CC=gcc -fPIC|" ./Makefile
     fi
@@ -332,8 +339,9 @@ function installLib {
         cd "$p"
         return $confRC
     fi
+    
     echo "  - Running: 'make && make install $makeArgs'"
-    make && make install $makeArgs
+    make $makeArgs && make $makeArgs install 
     makeRC=$?
     
     cd "$p"
@@ -358,6 +366,7 @@ if [ "$version" != "" ]; then
     
     # Build... the build tools
     export PATH="$PREFIX/bin:$PATH"
+    export LDFLAGS="-L$PREFIX/lib -L$PREFIX/lib64"
     
     if [ "`which m4`" == "" ]; then
         installLib "http://ftp.gnu.org/gnu/m4/m4-$V_M4.tar.gz" \
@@ -412,13 +421,13 @@ if [ "$version" != "" ]; then
                "ncurses-$V_NCURSES" \
                "ncurses/curses.h" \
                "confmake" \
-               "--with-shared --without-normal"
-               
+               "--with-shared" # --without-normal
+    
     installLib "ftp://ftp.cwru.edu/pub/bash/readline-$V_READLINE.tar.gz" \
                "readline-$V_READLINE.tar.gz" \
                "readline-$V_READLINE" \
                "readline/readline.h" \
-               "confmake"
+               "confmake_readline"
     
     installLib "http://prdownloads.sourceforge.net/libpng/zlib-$V_ZLIB.tar.gz?download" \
                "zlib-$V_ZLIB.tar.gz" \
@@ -430,14 +439,18 @@ if [ "$version" != "" ]; then
                "bzip2-$V_BZ2.tar.gz" \
                "bzip2-$V_BZ2" \
                "bzlib.h" \
-               "confmake2"
+               "confmake_bzlib"
     
     installLib "https://www.sqlite.org/2016/sqlite-autoconf-$V_SQLITE.tar.gz" \
                "sqlite-autoconf-$V_SQLITE.tar.gz" \
                "sqlite-autoconf-$V_SQLITE" \
                "sqlite3.h" \
                "confmake"
-               
+    installLib "ftp://ftp.gnu.org/gnu/gdbm/gdbm-$V_DBM.tar.gz" \
+               "gdbm-$V_DBM.tar.gz" \
+               "gdbm-$V_DBM" \
+               "gdbm.h" \
+               "confmake"      
                
     # INSTALL PYTHON
     installPython
@@ -462,6 +475,9 @@ if [ "$version" != "" ]; then
                "libxml2/libxml/xmlversion.h" \
                "autogen" \
                "--with-python=$PREFIX/bin/python$PYVER --disable-static --with-history"
+    
+    # Early export breaks ncurses build?
+    export C_INCLUDE_PATH="$C_INCLUDE_PATH:$INCDIR/libxslt/:$INCDIR/libxml2"
     
     [ $? -eq 0 ] && installLib "https://github.com/GNOME/libxslt/archive/v$V_XSLT.tar.gz" \
                "libxslt-$V_XSLT.tar.gz" \
@@ -489,8 +505,7 @@ if [ ! -e "$ROOT/bin/python" ]; then
     
     (cd $SRCDIR/virtualenv-14.0.6 && $PYTHON ./virtualenv.py --no-site-packages --no-setuptools "$ROOT")
     rc=$?
-    mv ./virtualenv.py "$ROOT/bin/"
-    rm ./virtualenv.pyc 2> $DN
+    rm ./*.pyc 2> $DN
     rm -r ./__pycache__ 2> $DN
     
     if [ $rc -ne 0 ]; then
