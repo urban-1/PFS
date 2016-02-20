@@ -105,7 +105,7 @@ dependencies are satisfied...
 The high level process is:
 
 1.  Install python dependencies. At the moment we are installing: `ncurses`,
-    `readline`, `zlib`, `bzip2` and `sqlite2`
+    `readline`, `zlib`, `bzip2` and `sqlite3`
     
 2.  Install python:
     
