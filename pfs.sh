@@ -18,6 +18,7 @@ function usage {
     echo "  -v       Python version (optional) - if missing, autodiscover"
     echo "  -r       Python requirements file (optional)"
     echo "  -j       Number of cores/threads to use when compiling (default=2)"
+    echo "  -s       Source/build directory (optional - default is <path>/src)"
     echo 
     echo
     echo "Delete environment:"
@@ -57,34 +58,25 @@ buildPackage=0
 buildType=""
 verbose=0
 cores=2
+srcdir=""
 
-while getopts ":hr:v:p:cab:DRSdj:" opt; do
+while getopts ":hr:v:p:cab:DRSdj:s:" opt; do
   case $opt in
-    h)
-        usage
-        ;;
-    r)
-        freeze=$OPTARG
-        ;;
-    v)
-        version=$OPTARG
-        ;;
-    p)
-        venv="$OPTARG"
-        ;;
-    c)
-        clean=1
-        ;;
-    a)
-        all=1
-        ;;
+    h) usage ;;
+    r) freeze="$OPTARG" ;;
+    v) version="$OPTARG" ;;
+    p) venv="$OPTARG" ;;
+    s) srcdir="$OPTARG";;
+    c) clean=1 ;;
+    a) all=1 ;;
+    d) verbose=1 ;;
     b)
         buildPackage=1
-        INSTALL_PREFIX=$OPTARG
+        INSTALL_PREFIX="$OPTARG"
         ;;
-    d)
-        verbose=1
-        ;;
+    R) buildType=R;;
+    S) buildType=S;;
+    D) buildType=D;;
     j)
         if [[ $OPTARG =~ ^-?[0-9]+$ ]]; then
             cores=$OPTARG
@@ -92,9 +84,6 @@ while getopts ":hr:v:p:cab:DRSdj:" opt; do
             echo "!!! IGNORING number of cores/threads - not an integer ($OPTARG)"
         fi
         ;;
-    R) buildType=R;;
-    S) buildType=S;;
-    D) buildType=D;;
     :)
         if [ "$OPTARG" == "b" ]; then
             buildPackage=1
@@ -154,12 +143,16 @@ function prt {
 
 
 # Create folders
-mkdir -p "$ROOT/src"
 mkdir -p "$ROOT/local"
 mkdir -p "$ROOT/bin"
 mkdir -p "$ROOT/lib"
 
 SRCDIR="$ROOT/src"
+if [ "$srcdir" != "" ]; then
+    SRCDIR=$srcdir
+fi
+mkdir -p "$SRCDIR"
+
 
 LIBDIR="$PREFIX/lib"
 LIB64DIR="$PREFIX/lib64"
@@ -389,8 +382,6 @@ function installLib {
     
     # Get in the folder
     cd "$SRCDIR/$folder"
-    
-    make clean 2> $DN
     
     makeArgs=""
     confRC=0
