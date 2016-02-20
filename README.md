@@ -17,8 +17,7 @@ Drop me a message if you have successfully run this on different distros/platfor
 
 ## Requirements ##
 
-Build tools: g++, make, libtool, etc. These can be installed in any location, if
-they are not available on the host, as long as they are in the `$PATH`.
+Build tools: g++, make. All other tools will be installed is missing
 
 ## Usage ##
 
