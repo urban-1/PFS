@@ -117,6 +117,7 @@ function installLib {
     
     # Get in the folder
     cd "$SRCDIR/$folder"
+    prt "  - cd $SRCDIR/$folder"
     
     makeArgs=""
     confRC=0
@@ -165,6 +166,7 @@ function installLib {
     
     if [ $makeRC -ne 0 ]; then
         prt " !!! ERROR MAKING !!!"
+        cd "$p"
         return $makeRC
     fi
     

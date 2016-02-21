@@ -240,7 +240,7 @@ cd \"$PREFIX\" && tar -cf - --exclude=\"lib/python$PYVER/**/tests/*\" \\
                            --exclude=\"ssl/man/*\" \\
                            --exclude=\"share/doc/*\" \\
                            --exclude=\"share/gtk-doc/*\" \\
-                           --exclude=\"share/*\" \\
+                           --exclude=\"share/pibs/*\" \\
                            --exclude=\"*.a\" \\
                            --exclude=\"*.la\" \\
                            . | (cd "$INSTALL_PREFIX" && tar -xvf - )
@@ -252,8 +252,6 @@ exit 0
     checkinstall -$buildType -y \
                  --install=no \
                  --fstrans=yes \
-                 --strip=no \
-                 --stripso=no \
                  --delspec=yes \
                  --deldoc=yes \
                  --deldesc=yes \
