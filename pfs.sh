@@ -241,6 +241,7 @@ cd \"$PREFIX\" && tar -cf - --exclude=\"lib/python$PYVER/**/tests/*\" \\
                            --exclude=\"share/doc/*\" \\
                            --exclude=\"share/gtk-doc/*\" \\
                            --exclude=\"share/pibs/*\" \\
+                           --exclude=\"share/mibs/*\" \\
                            --exclude=\"*.a\" \\
                            --exclude=\"*.la\" \\
                            . | (cd "$INSTALL_PREFIX" && tar -xvf - )
