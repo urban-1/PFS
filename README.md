@@ -139,7 +139,22 @@ the following way:
                "ncurses/curses.h" \               # <-- A single `include` file that is use to check if already installed
                "confmake" \                       # <-- Build type (confmake, autogen - see source)
                "--with-shared --without-normal"   # <-- Additional args to `./configure` (--prefix and --enable-shared are added)
-               
+
+### Faster builds ###
+
+If you don't really intend to keep the development environment, consider using
+`-p /dev/shm/pfs` or `/run/shm/pfs` which are going to be discarded after the
+next reboot. Once you are happy with your build you can either copy it over to
+disk, or create a package out of it and copy that.
+
+_NOTE_: if you move the python virtual environment (`bin` and `lib`) folders, it
+will require rebuilding. Therefore, your `local` should also be copied over to
+the new location
+
+If you do want to keep the development environment but you don't care about the
+sources and build, you can specify `-s /run/shm/pfs/src` as your source/build
+while the developement can be elsewhere (`-p ~/pfs/dev3.4.3`).
+
 Have fun!
 
 ## **DISCLAIMER** ##
