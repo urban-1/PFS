@@ -153,7 +153,7 @@ function installLib {
     fi
     
     if [ $confRC -ne 0 ]; then
-        prt " !!! ERROR CONFIGURING !!!"
+        prt " !!! ERROR CONFIGURING ($confRC) !!!"
         cd "$p"
         return $confRC
     fi
