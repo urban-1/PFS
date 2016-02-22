@@ -439,6 +439,7 @@ if [ "$version" != "" ]; then
                "libxml2/libxml/xmlversion.h" \
                "autogen" \
                "--with-python=$PREFIX/bin/python$PYVER --disable-static --with-history"
+
     
     # Early export breaks ncurses build?
     export C_INCLUDE_PATH="$C_INCLUDE_PATH:$INCDIR/libxslt/:$INCDIR/libxml2"
@@ -448,7 +449,13 @@ if [ "$version" != "" ]; then
                "libxslt-$V_XSLT" \
                "libxslt/xslt.h" \
                "autogen" \
-               " --with-libxml-prefix=$PREFIX"
+               " --with-libxml-prefix=$PREFIX"               
+    
+    installLib "http://pyyaml.org/download/libyaml/yaml-$V_YAML.tar.gz" \
+            "yaml-$V_YAML.tar.gz" \
+            "yaml-$V_YAML" \
+            "yaml.h" \
+            "confmake"
 fi
 
 

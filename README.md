@@ -126,7 +126,7 @@ The high level process is:
     ```
     
 4.  Install few extra libs on top. They are mainly for SNMP and xml
-    parsing: `libsmi`, `libffi`, `libxml2` and `libxslt`
+    parsing: `libsmi`, `libffi`, `libxml2` and `libxslt`, `libyaml`
     
 ### Installing more libraries ###
 

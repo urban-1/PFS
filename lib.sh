@@ -56,6 +56,8 @@ function untarSrc {
 # Basic python installation
 #
 function installPython {
+    prt " * Installing python $PYVER"
+    
     base="Python-$version.tgz"
     folder="Python-$version"
     file="https://www.python.org/ftp/python/$version/Python-$version.tgz"
@@ -65,8 +67,9 @@ function installPython {
     
     p=`pwd`
     
-    if [ -f "$SRCDIR/$folder/python" ]; then
-        echo " - python is build... skipping"
+    prt "  - Checking $PREFIX/bin/python$PYVER"
+    if [ -e "$PREFIX/bin/python$PYVER" ]; then
+        prt " - Python is build... skipping"
         return
     fi
     
@@ -113,6 +116,10 @@ function installLib {
     untarSrc "$base" "$folder" 2> $DN
     if [ $? -ne 0 ]; then
         unzipSrc "$base" "$folder"
+    fi
+    if [ $? -ne 0 ]; then
+        prt " !! FAILED TO EXTRACT"
+        return
     fi
     
     # Get in the folder
