@@ -371,7 +371,7 @@ if [ "$version" != "" ]; then
                "confmake" \
                "--with-shared" # --without-normal
     
-    installLib "ftp://ftp.cwru.edu/pub/bash/readline-$V_READLINE.tar.gz" \
+    installLib "https://ftp.gnu.org/gnu/readline/readline-$V_READLINE.tar.gz" \
                "readline-$V_READLINE.tar.gz" \
                "readline-$V_READLINE" \
                "readline/readline.h" \

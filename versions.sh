@@ -18,7 +18,7 @@ V_SSL=1_0_2f
 V_SMI=0.5.0
 V_FFI=3.2.1
 # 2.9.2 was build successfully with system autotool on Debian 7
-# but it failes with the local versions...
+# but it fails with the local versions...
 V_XML2=2.9.1
 V_XSLT=1.1.28
 V_YAML=0.1.5
