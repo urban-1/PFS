@@ -459,7 +459,7 @@ if [ "$version" != "" ]; then
 fi
 
 
-if [ ! -e "$ROOT/bin/python" ]; then
+if [ ! -e "$ROOT/bin/python" ] && [ "$ROOT" != "/usr" ]; then
     prt " * Installing virtualenv..."
     if [ ! -e $SRCDIR/virtualenv-$V_VENV.tar.gz ]; then
         prt "  - Getting virtualenv..."
