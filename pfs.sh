@@ -417,7 +417,7 @@ if [ "$version" != "" ]; then
                "shared zlib threads"
 
     # Required for libxml2
-    ACLOCAL_PATH=/usr/local/share/aclocal:/usr/share/aclocal    
+    export ACLOCAL_PATH=/usr/local/share/aclocal:/usr/share/aclocal    
        
     # INSTALL PYTHON
     installPython
