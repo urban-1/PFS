@@ -416,6 +416,9 @@ if [ "$version" != "" ]; then
                "confmake_ssl" \
                "shared zlib threads"
                
+    # Required for libxml to compile...
+    export ACLOCAL_PATH="$PREFIX/share/aclocal"
+               
     # INSTALL PYTHON
     installPython
     
