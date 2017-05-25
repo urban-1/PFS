@@ -132,7 +132,7 @@ function installLib {
     
     if [ $type == "autogen" ]; then
         prt "  - Running: './autogen.sh $opts'"
-        export ACLOCAL_PATH=$PREFIX/local/share/aclocal; ./autogen.sh $opts
+        ./autogen.sh $opts
         confRC=$?
     elif [ $type == "confmake" ]; then
         prt "  - Running: './configure $opts'"
